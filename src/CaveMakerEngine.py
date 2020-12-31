@@ -1,7 +1,7 @@
 import OpenGL.GL as gl
 from EnginePkg.Engine import Engine
 
-class MineMaker(Engine):
+class CaveMakerEngine(Engine):
     def __init__(self) -> None:
         super().__init__()
 

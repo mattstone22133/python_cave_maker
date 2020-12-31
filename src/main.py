@@ -1,8 +1,8 @@
 from EnginePkg.Engine import Engine
-from MineMaker import MineMaker
+from CaveMakerEngine import CaveMakerEngine
 
 if __name__ == "__main__":
-    instance = MineMaker()
+    instance = CaveMakerEngine()
     instance.run()
 
 
