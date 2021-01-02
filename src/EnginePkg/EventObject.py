@@ -3,13 +3,14 @@
 from typing import Callable, List, Set
 
 class Event:
-    def __init__(self) -> None:
+    def __init__(self, reflection_event_args=None) -> None:
         super().__init__()
 
         self._subscribers:List[Callable] = []
         self._broadcasting:bool = False
         self._pending_add_subscribers: Set[Callable] = set()
         self._pending_removals: Set[Callable] = set()
+        self.reflection_event_args = reflection_event_args # note: does not enforce what users broadcast, perhaps useful for runtime querying
 
     def add_subscriber(self, subscriber:Callable):
         if not self._broadcasting:
@@ -35,7 +36,7 @@ class Event:
     def __len__(self):
         return len(self._subscribers) + len(self._pending_add_subscribers) - len(self._pending_removals)
 
-    def broadcast(self, event_args=[]):
+    def broadcast(self, event_args=None):
         '''Broadcasts the event to all subscribers'''
         self._broadcasting = True
         for subscriber in self._subscribers:

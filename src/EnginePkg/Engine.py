@@ -6,6 +6,7 @@ from .EventObject import Event
 from .SystemBase import SystemBase
 from .TimeSystem import TimeSystem, TimeManager
 from .WindowSystem import WindowSystem
+from .GpuResourceSystem import GpuResourceSystem
 
 '''
 A module static singleton.
@@ -26,6 +27,7 @@ class Engine:
         self.systems:List[SystemBase] = []
         self.time_system:TimeSystem = TimeSystem() #time system requires special handling as it influences managing ticking systems
         self.window_system = self.register_system(WindowSystem())
+        self.gpu_resource_system = self.register_system(GpuResourceSystem())
         #events
         self.event_render:Event = Event()
 
