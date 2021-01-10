@@ -44,10 +44,12 @@ class Engine:
     def game_loop(self):
         print("starting game loop")
 
-        self.create_window_v()
+        self.create_window_v() #TODO rename virtuals to begin with a v_
 
         while not self.window_system.primary_window_active():
             self.time_system.update_time()
+            for system in self.systems:
+                system.tick_system_v(self.time_system.frame_delta_sec)
             self.render_v(self.time_system.frame_delta_sec) #todo get delta time and pass it
             self.event_render.broadcast({"delta_sec" : self.time_system.frame_delta_sec})
             self.window_system.primary_window.update_screen()

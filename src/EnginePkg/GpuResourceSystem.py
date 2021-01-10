@@ -5,17 +5,33 @@ class GpuResource:
     def __init__(self):
         super().__init__()
         self.has_resources: bool = False
+        self.is_gpu_available: bool = False
 
         from .Engine import Engine, get_engine
-        get_engine().gpu_resource_system.add(self)
+        get_engine().gpu_resource_system._add(self)
 
-    def acquire_resources_v(self):
-        '''hook into this virtual to request your gpu resources, such as buffers, shaders, etc)'''
+    def _acquire_resources(self):
+        '''Only GpuResourceSystem should call this method, so that state is always in correct configuration'''
+        self.v_acquire_resources()
+        assert(self.has_resources) # catch if child forgot to call super
+
+    def _release_resources(self):
+        '''Only GpuResourceSystem should call this method, so that state is always in correct configuration'''
+        self.v_release_resources()
+        assert(not self.has_resources) # catch if child forgot to call super
+
+    def v_acquire_resources(self):
+        '''hook into this virtual to request your gpu resources, such as buffers, shaders, etc)
+            This should never invoked by a subclass, let the GPU resource system do so state is maintained '''
         self.has_resources = True
 
-    def release_resources_v(self):
-        '''hook into this virtual to delete your gpu resources'''
+    def v_release_resources(self):
+        '''hook into this virtual to delete your gpu resources
+            This should never invoked by a subclass, let the GPU resource system do so state is maintained '''
         self.has_resources = False
+
+    def gpu_ready(self)->bool:
+        return self.is_gpu_available
 
 
 class GpuResourceSystem(SystemBase):
@@ -25,41 +41,53 @@ class GpuResourceSystem(SystemBase):
     def __init__(self):
         super().__init__()
         self.active_resources: List[GpuResource] = []
-        self.pending_add: List[GpuResource] = []
-        self.resources_available = False #TODO hook this up to window system
+        self.pending_acquires: List[GpuResource] = []
+        self.gpu_available = False 
+        self.try_to_acquire = True #used to flag resource release when
 
     def init_system_v(self):
         # window system is now gauranteed to be instantiated
         from .WindowSystem import WindowSystem, get_window_system
         win_sys:WindowSystem = get_window_system()
-        win_sys.event_gpu_resources_changed.add_subscriber(self.handle_gpu_resources_changed)
+        win_sys.event_gpu_resources_changed.add_subscriber(self._handle_gpu_ready_changed)
 
-    def handle_gpu_resources_changed(self, args)->None:
+    def shutdown_system_v(self):
+        self._release_active_resources()
+
+    def tick_system_v(self, dt_sec:float):
+        if self.gpu_available and self.try_to_acquire:
+            self._acquire_pending_resources()
+        else:
+            self._release_active_resources()
+
+    def _handle_gpu_ready_changed(self, args)->None:
         from .WindowSystem import EventArgs_GpuResourceChanged
         typed_args:EventArgs_GpuResourceChanged = args #avoiding adding type to parameter as dont want to create circular dependency on systems
 
-        if typed_args.has_resources:
-            self.resources_available = True
-        else:
-            self.resources_available = False
+        self.gpu_available = typed_args.gpu_ready
+        # set up GPU ready flag before actually attempting to acquire resources; can't acquire resources if no gpu availble
+        for resource in self.active_resources:
+            resource.is_gpu_available = typed_args.gpu_ready
+        for pending_resource in self.pending_acquires:
+            pending_resource.is_gpu_available = typed_args.gpu_ready
+        # note: dont acquire resources here, let the tick do it for simple design
 
-    def shutdown_system_v(self):
-        self.release_resources()
+    def _acquire_pending_resources(self):
+        for new_resource in self.pending_acquires:
+            new_resource._acquire_resources()
+            self.active_resources.append(new_resource)
+        self.pending_acquires.clear()
 
-    def tick_system_v(self, dt_sec:float):
-        if self.resources_available:
-            for new_resource in self.pending_add:
-                new_resource.acquire_resources_v()
-        else:
-            self.release_resources()
-
-    def release_resources(self):
+    def _release_active_resources(self):
         for active_resource in self.active_resources:
-            active_resource.release_resources_v
+            active_resource._release_resources()
+            self.pending_acquires.append(active_resource)
 
-    def add(self, resource: GpuResource):
+    def _add(self, resource: GpuResource):
+        ''' Should be called automatically and internally by the GPUResource, should never need to call this externally'''
         if (resource is not None
         and resource not in self.active_resources 
-        and resource not in self.pending_add):
-            self.pending_add.add(resource)
+        and resource not in self.pending_acquires):
+            resource.is_gpu_available = self.gpu_available
+            self.pending_acquires.append(resource)
 
