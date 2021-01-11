@@ -72,21 +72,21 @@ class WindowSystem(SystemBase):
         return glfw.window_should_close(self.primary_window.glfw_window)
 
     #### virtuals ####
-    def init_system_v(self):
+    def v_init_system(self):
         if not glfw.init(): 
             print("failed to init glfw")
             sys.exit()        
-        return super().init_system_v()
+        return super().v_init_system()
 
-    def tick_system_v(self, dt_sec:float):
+    def v_tick_system(self, dt_sec:float):
         if self.primary_window:
             assert(self.primary_window.registered_as_primary_window) #someone installed a primary window without registering it, we need to register for callbacks.
 
-    def shutdown_system_v(self):
+    def v_shutdown_system(self):
         if self.primary_window is not None:
             self.event_gpu_resources_changed.broadcast(EventArgs_GpuResourceChanged(gpu_ready=False)) #signal release before terminating
         glfw.terminate() #may need to special case this if other systems depend on window/opengl context
-        return super().shutdown_system_v()
+        return super().v_shutdown_system()
 
     def register_primary_window(self, window:Window):
         # cleanup previous window 

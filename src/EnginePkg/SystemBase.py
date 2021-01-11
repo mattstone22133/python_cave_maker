@@ -1,8 +1,8 @@
 
 class SystemBase:
-    def init_system_v(self):
+    def v_init_system(self):
         pass
-    def shutdown_system_v(self):
+    def v_shutdown_system(self):
         pass
-    def tick_system_v(self, dt_sec:float):
+    def v_tick_system(self, dt_sec:float):
         pass

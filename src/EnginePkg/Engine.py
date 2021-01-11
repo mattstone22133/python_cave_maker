@@ -39,25 +39,25 @@ class Engine:
     def initialize_systems(self):
         print("initializing systems")
         for system in self.systems:
-            system.init_system_v()
+            system.v_init_system()
 
     def game_loop(self):
         print("starting game loop")
 
-        self.create_window_v() #TODO rename virtuals to begin with a v_
+        self.v_create_window()
 
         while not self.window_system.primary_window_active():
             self.time_system.update_time()
             for system in self.systems:
-                system.tick_system_v(self.time_system.frame_delta_sec)
-            self.render_v(self.time_system.frame_delta_sec) #todo get delta time and pass it
+                system.v_tick_system(self.time_system.frame_delta_sec)
+            self.v_render(self.time_system.frame_delta_sec) #todo get delta time and pass it
             self.event_render.broadcast({"delta_sec" : self.time_system.frame_delta_sec})
             self.window_system.primary_window.update_screen()
 
     def shutdown_systems(self):
         print("shutting down systems")
         for system in self.systems:
-            system.shutdown_system_v()
+            system.v_shutdown_system()
 
     def register_system(self, system:SystemBase)->SystemBase:
         if system not in self.systems:
@@ -68,10 +68,10 @@ class Engine:
             return None
 
     # overrides
-    def create_window_v(self):
+    def v_create_window(self):
         self.window_system.create_default_window()
 
-    def render_v(self, delta_sec:float):
+    def v_render(self, delta_sec:float):
         pass
 
 

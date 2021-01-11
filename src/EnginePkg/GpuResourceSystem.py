@@ -45,16 +45,16 @@ class GpuResourceSystem(SystemBase):
         self.gpu_available = False 
         self.try_to_acquire = True #used to flag resource release when
 
-    def init_system_v(self):
+    def v_init_system(self):
         # window system is now gauranteed to be instantiated
         from .WindowSystem import WindowSystem, get_window_system
         win_sys:WindowSystem = get_window_system()
         win_sys.event_gpu_resources_changed.add_subscriber(self._handle_gpu_ready_changed)
 
-    def shutdown_system_v(self):
+    def v_shutdown_system(self):
         self._release_active_resources()
 
-    def tick_system_v(self, dt_sec:float):
+    def v_tick_system(self, dt_sec:float):
         if self.gpu_available and self.try_to_acquire:
             self._acquire_pending_resources()
         else:

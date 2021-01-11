@@ -143,7 +143,6 @@ class Cube(GpuResource):
         self.vbo_uv = None
 
         self.make_vbos()
-        #TODO need shutdown event phases, etc.
         pass
 
     def v_acquire_resources(self):
@@ -197,7 +196,7 @@ class Cube(GpuResource):
 
     def make_uv_vbo(self):
         if self.vbo_uv is None:
-            #TODO make vbo normal
+            #TODO make vbo uv
             pass
 
     def render(self):
