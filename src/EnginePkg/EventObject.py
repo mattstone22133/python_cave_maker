@@ -1,11 +1,16 @@
 
-#there is probably a more pythonic way to do this, but this matches c# multicast delegate pattern
+# there is probably a more pythonic way to do this, but this matches c# multicast delegate pattern
 from typing import Callable, List, Set
 
 class Event:
+    '''A class that allows binding callbacks to event objects. 
+        subscribers are considered strong references, and should be manually removed.
+            Making them weakref has unfortunately result of not being able to just pass callbacks like event.add_subscriber(obj.callback)
+            as the bound function will be deleted after add_subscriber goes out of scope.
+            to stop dead on arrivale using weakrefs, something like this may be useful to investigate: weakref.WeakMethod or custom code https://code.activestate.com/recipes/81253/
+        when changing this class, be sure to run tests in test_events.py and add new tests for new features'''
     def __init__(self, reflection_event_args=None) -> None:
         super().__init__()
-
         self._subscribers:List[Callable] = []
         self._broadcasting:bool = False
         self._pending_add_subscribers: Set[Callable] = set()
@@ -19,7 +24,6 @@ class Event:
             self._pending_removals.remove(subscriber)
         else:
             self._pending_add_subscribers.add(subscriber)
-
         handle = subscriber
         return handle
 
