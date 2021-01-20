@@ -24,9 +24,7 @@ class Transform:
 ##########################################################################################################
 # Scene Nodes
 ##########################################################################################################
-local_forward = glm.vec3(0,0,-1)
-local_right = glm.vec3(1,0,0)
-local_up = glm.vec3(0,1,0)
+
 class SceneNode:
     def __init__(self, local_transform=Transform(), strong_parent:'SceneNode'=None) -> None:
         self._local_transform:Transform = Transform(local_transform.position, local_transform.rotation_quat, local_transform.scale) 
@@ -41,6 +39,7 @@ class SceneNode:
         self._world_pos_cache:glm.vec3 = None
         self._world_rot_cache:glm.quat = None
         self._world_scale_cache:glm.vec3 = None
+        self._world_inverse_mat4_cache:glm.mat4 = None
         for child in self.children:
             child.make_dirty() # required if children are not subscribing to parents (to avoid circular ref)
 
@@ -91,6 +90,12 @@ class SceneNode:
             self._world_mat4_cache = parent_matrix * self._local_transform.get_model_matrix()
         return self._world_mat4_cache
 
+    def get_world_inverse_matrix(self)->glm.mat4:
+        if self._world_inverse_mat4_cache is None:
+            world_mat = self.get_world_transform_matrix()
+            self._world_inverse_mat4_cache = glm.inverse(world_mat)
+        return self._world_inverse_mat4_cache
+
     def get_world_position(self) -> glm.vec3:
         if self._world_pos_cache is None:
             self._world_pos_cache = glm.vec3( self.get_world_transform_matrix() * glm.vec4(0,0,0,1) )
@@ -109,15 +114,37 @@ class SceneNode:
 
     def get_world_rotation(self) -> glm.quat:
         if self._world_rot_cache is None:
-            # NOTE: the commented code below appears to work, but probably more effecient to extra quaterions directly; leaving
-            basis_mat = glm.mat3() #identiy matrix where each column is a basis vector; x, y, and z
-            transformed_basis_mat = glm.mat3(self.get_world_transform_matrix()) * basis_mat 
-            self._world_rot_cache = glm.quat_cast(transformed_basis_mat)
+            basis_mat = glm.mat4() #identiy matrix where each column is a basis vector; x, y, and z (and w, I think should use mat4)
+            transformed_basis_mat = self.get_world_transform_matrix() * basis_mat 
+            self._world_rot_cache = glm.quat_cast(glm.mat3(transformed_basis_mat))
             #alternative: just consider parent world rotations
             # parent_rot = self.weak_parent().get_world_rotation() if self.weak_parent is not None else glm.quat()
             # self._world_rot_cache = parent_rot * self._local_transform.rotation_quat
         return self._world_rot_cache
     
+    def set_world_position(self, world_position:glm.vec3):
+        parent_world_inverse = self.weak_parent().get_world_inverse_matrix() if self.weak_parent is not None else glm.mat4()
+        local_pos = parent_world_inverse * glm.vec4(world_position, 1)
+        self._local_transform.position = glm.vec3(local_pos)
+        self.make_dirty()
+
+    def set_world_rotation(self, rotation:glm.quat):
+        #get transformed world basis using rotation quat
+        world_x = rotation * glm.vec3(1,0,0)
+        world_y = rotation * glm.vec3(0,1,0)
+        world_z = rotation * glm.vec3(0,0,1)
+
+        # transform basis vectors to local space, by using parent inverse
+        parent_world_inverse = self.weak_parent().get_world_inverse_matrix() if self.weak_parent is not None else glm.mat4()
+        local_x = glm.vec3(parent_world_inverse * glm.vec4(world_x, 0))
+        local_y = glm.vec3(parent_world_inverse * glm.vec4(world_y, 0))
+        local_z = glm.vec3(parent_world_inverse * glm.vec4(world_z, 0))
         
+        # use quaternion cast to construct a quaternion from the basis
+        local_transformed_basis = glm.mat3(local_x, local_y, local_z)
+        local_rot_quat = glm.quat_cast(local_transformed_basis)
+        
+        self._local_transform.rotation_quat = local_rot_quat
+        self.make_dirty()
 
 

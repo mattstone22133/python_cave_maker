@@ -76,14 +76,93 @@ def test_scene_node_world_functions():
     assert( glm.length(child_rotated_vec - parent_rotated_vec) < 0.01)
 
 def test_advanced_world_position():
-    #todo robust test set world position
-    #todo robust test get world position
-    assert(False)#TODO complicated world positioning
+    #test robust get world position
+    parent = SceneNode()
+    parent_pos = glm.vec3(1,0,0)
+    parent.set_local_position(parent_pos)
+
+    child = SceneNode()
+    child_pos = glm.vec3(1,0,0)
+    child.set_local_position(child_pos)
+
+    parent.add_child(child)
+
+    child_world_pos = child.get_world_position()
+    assert(glm.length(child_world_pos - (parent_pos + child_pos)) < 0.01)
+
+    parent.set_local_rotation(glm.angleAxis(glm.radians(180), glm.normalize(glm.vec3(0,1,0))))
+
+    child_world_pos = child.get_world_position()
+    assert(glm.length(child_world_pos - ((parent_pos + -child_pos))) < 0.01) #parent still offset to (1,0,0), but rotated so child is now 1 to left of parent, ie at zero
+
+    #robust test set world position
+    move_child_to_world_point = glm.vec3(3,3,3)
+    child.set_world_position(move_child_to_world_point)
+    child_world_pos = child.get_world_position()
+    assert(glm.length(child_world_pos - move_child_to_world_point) < 0.01)
+
+    move_child_to_world_point = glm.vec3(-3,-4, 2)
+    child.set_world_position(move_child_to_world_point)
+    child_world_pos = child.get_world_position()
+    assert(glm.length(child_world_pos - move_child_to_world_point) < 0.01)
+
+    move_parent_to_world_point = glm.vec3(1,2,-3)
+    parent.set_world_position(move_parent_to_world_point)
+    parent_world_pos = parent.get_world_position()
+    assert(glm.length(parent_world_pos - move_parent_to_world_point) < 0.01)
+
 
 def test_advanced_world_rotation():
+    parent = SceneNode()
+    parent_pos = glm.vec3(1,0,0)
+    parent.set_local_position(parent_pos)
+
+    child = SceneNode()
+    child_pos = glm.vec3(1,0,0)
+    child.set_local_position(child_pos)
+
+    parent.add_child(child)
+
+    def quats_are_equal(a:glm.quat, b:glm.quat):
+        #seems that two quaternions can give same rotations, but have different signs
+        #so test is making sure they produce the same vector after rotations; this could probably be more robust
+        a_vec = glm.vec3(1,1,1)* a
+        b_vec = glm.vec3(1,1,1)* b
+        return glm.length(a_vec - b_vec) < 0.01
+
+    # robust test get world rotation
+    start_rot = glm.angleAxis(glm.radians(180), glm.normalize(glm.vec3(0,1,0)))
+    parent.set_local_rotation(start_rot)
+    child_world_rot = child.get_world_rotation()
+    assert(quats_are_equal(child_world_rot, start_rot))
+    assert(not quats_are_equal(child.get_local_rotation(), start_rot))
+
     #todo robust test set world rotation
-    #todo robust test get world rotation
-    assert(False)#TODO complicated world rotation
+    arbitrary_rot = glm.angleAxis(glm.radians(180), glm.normalize(glm.vec3(1,-1,1)))
+    child.set_world_rotation(arbitrary_rot)
+    child_world_rot = child.get_world_rotation()
+    assert(quats_are_equal(child_world_rot, arbitrary_rot))
+    assert(not quats_are_equal(child.get_local_rotation(), arbitrary_rot))
+    assert(not quats_are_equal(parent.get_world_rotation(), arbitrary_rot))
+
+    arbitrary_rot = glm.angleAxis(glm.radians(-33.6), glm.normalize(glm.vec3(1,-1,1)))
+    child.set_world_rotation(arbitrary_rot)
+    child_world_rot = child.get_world_rotation()
+    assert(quats_are_equal(child_world_rot, arbitrary_rot))
+    assert(not quats_are_equal(child.get_local_rotation(), arbitrary_rot))
+    assert(not quats_are_equal(parent.get_world_rotation(), arbitrary_rot))
+
+    def test_world_foward_vec():
+        #TODO robust world forward vector tests
+        assert(False)
+
+    def test_world_right_vec():
+        #TODO robust world forward vector tests
+        assert(False)
+
+    def test_world_up_vec():
+        #TODO robust world forward vector tests
+        assert(False)        
 
 
     
