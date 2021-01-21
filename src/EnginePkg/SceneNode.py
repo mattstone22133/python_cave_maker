@@ -28,7 +28,7 @@ class Transform:
 class SceneNode:
     def __init__(self, local_transform=Transform(), strong_parent:'SceneNode'=None) -> None:
         self._local_transform:Transform = Transform(local_transform.position, local_transform.rotation_quat, local_transform.scale) 
-        self.weak_parent = weakref.ref(strong_parent) if strong_parent is not None else None
+        self.weak_parent:weakref.ReferenceType['SceneNode'] = weakref.ref(strong_parent) if strong_parent is not None else None
         self.children:List[SceneNode] = []
         self._forward = glm.vec3(0,0,-1) #if changing these basis vectors, you must dirty the scene node; hence _private 
         self._right = glm.vec3(1,0,0)
@@ -43,15 +43,18 @@ class SceneNode:
         self._world_rot_cache:glm.quat = None
         self._world_scale_cache:glm.vec3 = None
         self._world_inverse_mat4_cache:glm.mat4 = None
-        self.local_forward = None
-        self.local_right = None
-        self.local_up = None
-        self.world_forward = None
-        self.world_right = None
-        self.world_up = None
+        self._local_forward_cache = None
+        self._local_right_cache = None
+        self._local_up_cache = None
+        self._world_forward_cache = None
+        self._world_right_cache = None
+        self._world_up_cache = None
         for child in self.children:
             child.make_dirty() # required if children are not subscribing to parents (to avoid circular ref)
 
+    ################################################################################################
+    # Hierarchy Functions
+    ################################################################################################
     def add_child(self, child_node:'SceneNode'):
         if child_node not in self.children:
             old_parent = child_node.weak_parent() if child_node.weak_parent is not None else None
@@ -77,7 +80,6 @@ class SceneNode:
         return glm.vec3(self._local_transform.position)
 
     def set_local_rotation(self, rotation:glm.quat):
-
         self._local_transform.rotation_quat = glm.quat(rotation)
         self.make_dirty()
 
@@ -92,19 +94,19 @@ class SceneNode:
         return glm.vec3(self._local_transform.scale)
 
     def get_local_forward(self):
-        if self.local_forward is None:
-            self.local_forward = glm.vec3(self._local_transform.get_model_matrix() * glm.vec4(self._forward,0))
-        return self.local_forward
+        if self._local_forward_cache is None:
+            self._local_forward_cache = glm.vec3(self._local_transform.get_model_matrix() * glm.vec4(self._forward,0))
+        return self._local_forward_cache
 
     def get_local_right(self):
-        if self.local_right is None:
-            self.local_right = glm.vec3(self._local_transform.get_model_matrix() * glm.vec4(self._right,0))
-        return self.local_right
+        if self._local_right_cache is None:
+            self._local_right_cache = glm.vec3(self._local_transform.get_model_matrix() * glm.vec4(self._right,0))
+        return self._local_right_cache
 
     def get_local_up(self):
-        if self.local_up is None:
-            self.local_up = glm.vec3(self._local_transform.get_model_matrix() * glm.vec4(self._up,0))
-        return self.local_up
+        if self._local_up_cache is None:
+            self._local_up_cache = glm.vec3(self._local_transform.get_model_matrix() * glm.vec4(self._up,0))
+        return self._local_up_cache
 
     ################################################################################################
     # World Transform Functions
@@ -135,11 +137,11 @@ class SceneNode:
             self._world_pos_cache = glm.vec3( self.get_world_transform_matrix() * glm.vec4(0,0,0,1) )
         return self._world_pos_cache
 
-    # not supporting get/set world scale at this time due to complications in implementation with signed rotaitons
+    # not supporting get/set world scale at this time due to complications in implementation with signed rotations
     # def get_world_scale(self) -> glm.vec3:
     #     if self._world_scale_cache is None:
     #         #get world scale is hard, you cannot simply multply all scales together, rotations matter (thought excerise: I think this can be shown, in blender, with 3 parent nodes, you can scale down grandparent's x, and influence child's y scale, if middle-parent is rotated by 90)
-    #         #note: it apperas that getting scale from final world transform may include incorrect negatives based on values close to zero that are negative; only considering scale concatenations, 
+    #         #note: it appears that getting scale from final world transform may include incorrect negatives based on values close to zero that are negative; only considering scale concatenations, 
     #         # though this many not be strictly correct considering rotations
     #         #### self._world_scale_cache = glm.vec3( self.get_world_transform_matrix() * glm.vec4(1,1,1,0) )
     #         parent_scale = self.weak_parent().get_world_scale() if self.weak_parent is not None else glm.vec3(1,1,1)
@@ -157,19 +159,19 @@ class SceneNode:
         return self._world_rot_cache
 
     def get_world_forward(self):
-        if self.world_forward is None:
-            self.world_forward = glm.vec3(self.get_world_transform_matrix() * glm.vec4(self._forward,0))
-        return self.world_forward
+        if self._world_forward_cache is None:
+            self._world_forward_cache = glm.vec3(self.get_world_transform_matrix() * glm.vec4(self._forward,0))
+        return self._world_forward_cache
 
     def get_world_right(self):
-        if self.world_right is None:
-            self.world_right = glm.vec3(self.get_world_transform_matrix() * glm.vec4(self._right,0))
-        return self.world_right
+        if self._world_right_cache is None:
+            self._world_right_cache = glm.vec3(self.get_world_transform_matrix() * glm.vec4(self._right,0))
+        return self._world_right_cache
 
     def get_world_up(self):
-        if self.world_up is None:
-            self.world_up = glm.vec3(self.get_world_transform_matrix() * glm.vec4(self._up,0))
-        return self.world_up
+        if self._world_up_cache is None:
+            self._world_up_cache = glm.vec3(self.get_world_transform_matrix() * glm.vec4(self._up,0))
+        return self._world_up_cache
     
     def set_world_position(self, world_position:glm.vec3):
         parent_world_inverse = self.weak_parent().get_world_inverse_matrix() if self.weak_parent is not None else glm.mat4()
