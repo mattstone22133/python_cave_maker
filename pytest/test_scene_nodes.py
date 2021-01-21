@@ -5,6 +5,9 @@ sys.path.insert(0, myPath + '/../')
 import glm
 from src.EnginePkg.SceneNode import Transform, SceneNode
 
+def vec3_are_same(a_vec:glm.vec3, b_vec:glm.vec3):
+    return glm.length(a_vec - b_vec) < 0.001
+
 def test_transform():
     #test that run time of basic functions is okay
     a_rotation_transform = Transform()
@@ -152,18 +155,46 @@ def test_advanced_world_rotation():
     assert(not quats_are_equal(child.get_local_rotation(), arbitrary_rot))
     assert(not quats_are_equal(parent.get_world_rotation(), arbitrary_rot))
 
-    def test_world_foward_vec():
-        #TODO robust world forward vector tests
-        assert(False)
+def test_world_foward_right_up_vecs():
+    parent = SceneNode()
+    parent_pos = glm.vec3(1,0,0)
+    parent.set_local_position(parent_pos)
 
-    def test_world_right_vec():
-        #TODO robust world forward vector tests
-        assert(False)
+    child = SceneNode()
+    child_pos = glm.vec3(1,0,0)
+    child.set_local_position(child_pos)
 
-    def test_world_up_vec():
-        #TODO robust world forward vector tests
-        assert(False)        
+    parent.add_child(child)
+    start_rot = glm.angleAxis(glm.radians(180), glm.normalize(glm.vec3(0,1,0)))
+    parent.set_local_rotation(start_rot)
 
+    #did not change local transform, make sure these match up
+    assert(vec3_are_same(child._forward, child.get_local_forward()))
+    assert(vec3_are_same(child._right, child.get_local_right()))
+    assert(vec3_are_same(child._up, child.get_local_up()))
+
+    #180 around y should make vectorspoint in opposite directions
+    assert(vec3_are_same(-child._forward, child.get_world_forward()))
+    assert(vec3_are_same(-child._right, child.get_world_right()))
+    assert(vec3_are_same(child._up, child.get_world_up()))
+
+    #parent should match child world as we have only rotated the parent
+    assert(vec3_are_same(parent.get_world_forward(), child.get_world_forward()))
+    assert(vec3_are_same(parent.get_world_right(), child.get_world_right()))
+    assert(vec3_are_same(parent.get_world_up(), child.get_world_up()))
+
+    counter_rot = glm.angleAxis(glm.radians(-180), glm.normalize(glm.vec3(0,1,0)))
+    child.set_local_rotation(counter_rot)
+
+    #we counteracted the parent rotation, make sure the child now matches its original vectors
+    assert(vec3_are_same(child._forward, child.get_world_forward()))
+    assert(vec3_are_same(child._right, child.get_world_right()))
+    assert(vec3_are_same(child._up, child.get_world_up()))
+
+    #we now have a local rotation, the child local forward/right/up should not match its default axis (because local doesn't consider parent)
+    assert(not vec3_are_same(child._forward, child.get_local_forward()))
+    assert(not vec3_are_same(child._right, child.get_local_right()))
+    assert(vec3_are_same(child._up, child.get_local_up())) #we never changed the up vector
 
     
 
