@@ -61,6 +61,12 @@ class WindowSystem(SystemBase):
         self.primary_window:Window = None
         self.event_gpu_resources_changed = Event(EventArgs_GpuResourceChanged)
 
+    #### static getter 3###
+    def get():
+        from .Engine import get_engine, Engine
+        engine:Engine = get_engine()
+        return engine.window_system
+
     #### api ####
     def create_default_window(self):
         self.register_primary_window(Window())

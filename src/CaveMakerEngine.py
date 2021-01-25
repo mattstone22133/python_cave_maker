@@ -1,14 +1,17 @@
 from OpenGL.GL import *
+from EnginePkg.Camera import CameraBase
 from EnginePkg.Engine import Engine
 from EnginePkg.Shader import Shader
 from GamePkg.Cube import Cube
-from GamePkg.SharedShaders import WorldCubeShader_vs, WorldCubeShader_fs #TODO move this to a better location after initial testing
+from GamePkg.SharedShaders import WorldCubeShader_vs, WorldCubeShader_fs
+from EnginePkg.WindowSystem import WindowSystem #TODO move this to a better location after initial testing
 
 class CaveMakerEngine(Engine):
     def __init__(self) -> None:
         super().__init__()
         #temp
         self.cube = None #TODO must wait on opengl resources
+        self.debug_camera = None
 
     def v_create_window(self):
         ret = super().v_create_window()
@@ -16,6 +19,8 @@ class CaveMakerEngine(Engine):
         #TODO move this, temp code to get things working
         self.cube = Cube()
         self.cube_shader = Shader(vertex_src=WorldCubeShader_vs, fragment_src=WorldCubeShader_fs)
+        self.debug_camera = CameraBase()
+        self.debug_camera.bind_to_window_input(WindowSystem.get().primary_window.glfw_window)
 
         return ret;
     

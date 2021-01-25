@@ -13,9 +13,11 @@ A module static singleton.
 This allows for modular code testing by just cleaning up.
 Subclassing engine will correctly register singleton if super is called in __init__
 '''
-singleton = None
+singleton:'Engine' = None
 
 class Engine:
+    def get()->'Engine':
+        return singleton
 
     def __init__(self) -> None:
         super().__init__()
