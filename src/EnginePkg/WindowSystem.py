@@ -6,6 +6,7 @@ from .EventObject import Event
 import OpenGL.GL as gl
 import sys
 import glfw
+import math
 
 #########################################################################################
 # OpenGL Error Checking
@@ -13,6 +14,11 @@ import glfw
 def opengl_debug_message_callback(source:GLenum, msg_type:GLenum, id:GLuint, severity:GLenum, length:GLsizei, raw, user):
     converted_message = raw[0:length]
     print('opengl error: ', source, msg_type, id, severity, converted_message)
+
+#########################################################################################
+# Statics
+#########################################################################################
+static_logged_aspect_issue:bool = False
 
 #########################################################################################
 # Event Args
@@ -45,6 +51,20 @@ class Window:
         if debug_opengl:
             glDebugMessageCallback(GLDEBUGPROC(opengl_debug_message_callback), None)
 
+    def get_aspect(self)->float:
+        if self.glfw_window:
+            width, height = glfw.get_framebuffer_size(self.glfw_window)
+            aspect:float = float(width) / height
+            small_aspect:bool = (aspect - 1E-5) < 0
+            global static_logged_aspect_issue #global variable so we don't log spam when resizing window
+            if small_aspect or aspect == 0.0 or math.isnan(aspect) or math.isinf(aspect):
+                if not static_logged_aspect_issue:
+                    print("window has bad aspect")
+                    logged_aspect_issue = True
+                return 1.0; # pass a square aspect rather than hard crashing
+            static_logged_aspect_issue = False
+            return width / height
+        return 1.0 #return square aspect if no window data
 
     def update_screen(self):
         if self.glfw_window is not None:

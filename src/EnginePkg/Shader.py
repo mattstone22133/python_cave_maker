@@ -3,6 +3,8 @@ import sys, os;myPath = os.path.dirname(os.path.abspath(__file__));sys.path.inse
 from OpenGL.GL import *
 from EnginePkg.GpuResourceSystem import GpuResource
 
+import glm
+
 class Shader(GpuResource):
     def __init__(self, 
     vertex_src:str=None,
@@ -20,6 +22,11 @@ class Shader(GpuResource):
     def use(self):
         if self.has_resources:
             glUseProgram(self.linked_program)
+
+    def set_uniform_mat4(self, uniform_name:str, matrix:glm.mat4):
+        if self.has_resources and self.linked_program is not None: #not, we should also be "use()" this shader before making this call
+            uniform_loc = glGetUniformLocation(self.linked_program, uniform_name)
+            glUniformMatrix4fv(uniform_loc, 1, GL_FALSE, glm.value_ptr(matrix))
 
     def v_acquire_resources(self):
         super().v_acquire_resources()
@@ -49,7 +56,6 @@ class Shader(GpuResource):
             glCompileShader(fragment_shader_id)
             if geometry_shader_id: glCompileShader(geometry_shader_id)
 
-            vert_result = glGetShaderiv(vertex_shader_id, GL_COMPILE_STATUS)
             if not glGetShaderiv(vertex_shader_id, GL_COMPILE_STATUS):
                 print("failed to compile vertex shader:", glGetShaderInfoLog(vertex_shader_id))
                 return

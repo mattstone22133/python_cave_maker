@@ -8,10 +8,14 @@ layout (location = 0) in vec3 vert_normal;
 //out vec3 normal
 //out vec2 uv;
 
+uniform mat4 model      = mat4(1.f);
+uniform mat4 view       = mat4(1.f);
+uniform mat4 projection = mat4(1.f);
+
 void main(){
     //uv = vert_uv;
     //normal = normalize(vert_normal); //normalizing for model loading, this we we know normal is noramlized before interpolation
-    gl_Position = vec4(vert_position, 1);
+    gl_Position = projection * view * model * vec4(vert_position, 1);
 }
 """
 
